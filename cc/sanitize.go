@@ -1866,6 +1866,10 @@ func hwasanStaticLibs(config android.Config) *sanitizerStaticLibsMap {
 }
 
 func enableMinimalRuntime(sanitize *sanitize) bool {
+	if Bool(sanitize.Properties.SanitizeMutated.Never) {
+		return false
+	}
+
 	if sanitize.isSanitizerEnabled(Asan) {
 		return false
 	} else if sanitize.isSanitizerEnabled(Hwasan) {

@@ -1391,3 +1391,16 @@ func TestHwasan(t *testing.T) {
 		}
 	}
 }
+
+func TestMinimalRuntimeRespectsNever(t *testing.T) {
+	for _, never := range []bool{false, true} {
+		t.Run(fmt.Sprintf("never=%t", never), func(t *testing.T) {
+			s := &sanitize{}
+			s.Properties.SanitizeMutated.Never = BoolPtr(never)
+			s.Properties.SanitizeMutated.Misc_undefined = []string{"signed-integer-overflow"}
+			if got := enableMinimalRuntime(s); got != !never {
+				t.Errorf("enableMinimalRuntime() = %t, want %t", got, !never)
+			}
+		})
+	}
+}
