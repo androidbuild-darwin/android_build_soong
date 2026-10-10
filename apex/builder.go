@@ -76,7 +76,6 @@ func init() {
 	pctx.HostBinToolVariable("apex_sepolicy_tests", "apex_sepolicy_tests")
 	pctx.HostBinToolVariable("deapexer", "deapexer")
 	pctx.HostBinToolVariable("debugfs_static", "debugfs_static")
-	pctx.HostBinToolVariable("fsck_erofs", "fsck.erofs")
 	pctx.SourcePathVariable("genNdkUsedbyApexPath", "build/soong/scripts/gen_ndk_usedby_apex.sh")
 	pctx.HostBinToolVariable("conv_linker_config", "conv_linker_config")
 	pctx.HostBinToolVariable("assemble_vintf", "assemble_vintf")
@@ -256,7 +255,7 @@ var (
 
 	apexElfCheckerUnwantedRule = pctx.StaticRule("apexElfCheckerUnwantedRule", blueprint.RuleParams{
 		Command:     `${apex_elf_checker} --tool_path ${tool_path} --unwanted ${unwanted} ${in} && touch ${out}`,
-		CommandDeps: []string{"${apex_elf_checker}", "${deapexer}", "${debugfs_static}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
+		CommandDeps: []string{"${apex_elf_checker}", "${deapexer}", "${debugfs_static}", "${config.ClangBin}/llvm-readelf"},
 		Description: "run apex_elf_checker --unwanted",
 	}, "tool_path", "unwanted")
 )
@@ -951,7 +950,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	}
 	if !a.testApex && len(a.properties.Unwanted_transitive_deps) > 0 {
 		validations = append(validations,
-			runApexElfCheckerUnwanted(ctx, unsignedOutputFile.OutputPath, a.properties.Unwanted_transitive_deps))
+			runApexElfCheckerUnwanted(ctx, unsignedOutputFile.OutputPath, a.properties.Unwanted_transitive_deps, a.payloadFsType))
 	}
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rule,
@@ -1233,12 +1232,17 @@ func runApexSepolicyTests(ctx android.ModuleContext, apexFile android.OutputPath
 	return timestamp
 }
 
-func runApexElfCheckerUnwanted(ctx android.ModuleContext, apexFile android.OutputPath, unwanted []string) android.Path {
+func runApexElfCheckerUnwanted(ctx android.ModuleContext, apexFile android.OutputPath, unwanted []string, payloadFsType fsType) android.Path {
 	timestamp := android.PathForModuleOut(ctx, "apex_elf_unwanted.timestamp")
+	var implicitInputs android.Paths
+	if payloadFsType == erofs {
+		implicitInputs = append(implicitInputs, ctx.Config().HostToolPath(ctx, "fsck.erofs"))
+	}
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   apexElfCheckerUnwantedRule,
-		Input:  apexFile,
-		Output: timestamp,
+		Rule:      apexElfCheckerUnwantedRule,
+		Implicits: implicitInputs,
+		Input:     apexFile,
+		Output:    timestamp,
 		Args: map[string]string{
 			"unwanted":  android.JoinWithSuffixAndSeparator(unwanted, ".so", ":"),
 			"tool_path": ctx.Config().HostToolPath(ctx, "").String() + ":${config.ClangBin}",

@@ -11940,6 +11940,7 @@ func TestApexErofsToolDependency(t *testing.T) {
 					key: "myapex.key",
 					updatable: false,
 					payload_fs_type: %q,
+					unwanted_transitive_deps: ["libunwanted"],
 				}
 				apex_key {
 					name: "myapex.key",
@@ -11958,6 +11959,18 @@ func TestApexErofsToolDependency(t *testing.T) {
 			if usesErofs != (fsType == "erofs") {
 				t.Errorf("unexpected make_erofs dependency for %s: %v", fsType, tools)
 			}
+			checker := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("apexElfCheckerUnwantedRule")
+			checkerTools := append(checker.Implicits.Strings(), checker.RuleParams.CommandDeps...)
+			usesFsck := false
+			for _, tool := range checkerTools {
+				if strings.Contains(tool, "fsck.erofs") {
+					usesFsck = true
+				}
+			}
+			if usesFsck != (fsType == "erofs") {
+				t.Errorf("unexpected fsck.erofs dependency for %s: %v", fsType, checkerTools)
+			}
+
 		})
 	}
 }
