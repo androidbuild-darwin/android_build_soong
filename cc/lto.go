@@ -16,6 +16,7 @@ package cc
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -147,8 +148,8 @@ func (lto *lto) flags(ctx ModuleContext, flags Flags) Flags {
 		}
 
 		if !ctx.Config().IsEnvFalse("THINLTO_USE_MLGO") {
-			// Register allocation MLGO flags for ARM64.
-			if ctx.Arch().ArchType == android.Arm64 {
+			// The Darwin toolchain does not include the register allocation MLGO model.
+			if runtime.GOOS != "darwin" && ctx.Arch().ArchType == android.Arm64 {
 				ltoLdFlags = append(ltoLdFlags, "-Wl,-mllvm,-regalloc-enable-advisor=release")
 			}
 			// Flags for training MLGO model.
