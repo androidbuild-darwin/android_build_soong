@@ -557,3 +557,16 @@ func TestDarwinToolchainSupport(t *testing.T) {
 		t.Error("Darwin x86_64 must remain supported")
 	}
 }
+
+func TestDarwinSupportedTargets(t *testing.T) {
+	module := &Module{}
+	for _, test := range []struct {
+		arch      android.ArchType
+		supported bool
+	}{{android.Arm64, false}, {android.X86_64, true}} {
+		target := android.Target{Os: android.Darwin, Arch: android.Arch{ArchType: test.arch}}
+		if got := module.SupportsTarget(target); got != test.supported {
+			t.Errorf("Darwin %s support = %t, want %t", test.arch, got, test.supported)
+		}
+	}
+}

@@ -545,6 +545,12 @@ func GetOsSpecificVariantsOfCommonOSVariant(mctx BaseModuleContext) []Module {
 
 var DarwinUniversalVariantTag = archDepTag{name: "darwin universal binary"}
 
+// TargetSupport allows module types to exclude targets before arch variants and
+// inter-variant dependencies are created.
+type TargetSupport interface {
+	SupportsTarget(Target) bool
+}
+
 // archTransitionMutator splits a module into a variant for each Target requested by the module.  Target selection
 // for a module is in three levels, OsClass, multilib, and then Target.
 // OsClass selection is determined by:
@@ -598,7 +604,19 @@ func (a *archTransitionMutator) Split(ctx BaseModuleContext) []string {
 	}
 
 	osTargets := ctx.Config().Targets[os]
-
+	if support, ok := module.(TargetSupport); ok {
+		var supportedTargets []Target
+		for _, target := range osTargets {
+			if support.SupportsTarget(target) {
+				supportedTargets = append(supportedTargets, target)
+			}
+		}
+		osTargets = supportedTargets
+	}
+	if len(osTargets) == 0 {
+		base.Disable()
+		return nil
+	}
 	image := base.commonProperties.ImageVariation
 	// Filter NativeBridge targets unless they are explicitly supported.
 	// Skip creating native bridge variants for non-core modules.
