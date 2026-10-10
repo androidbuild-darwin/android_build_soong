@@ -1132,3 +1132,18 @@ func TestGetMetricsUploaderApp(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigResumeNinja(t *testing.T) {
+	env := Environment([]string{})
+	c := &configImpl{environ: &env}
+	c.parseArgs(testContext(), []string{"--skip-make", "--skip-soong", "-j2", "bacon"})
+	if !c.SkipConfig() || !c.SkipKati() || !c.SkipSoong() {
+		t.Fatal("Ninja resume must skip product config, Kati and Soong")
+	}
+	if c.SkipNinja() || c.SkipKatiNinja() {
+		t.Fatal("Ninja resume must retain the combined Soong and Kati build")
+	}
+	if c.parallel != 2 || !reflect.DeepEqual(c.arguments, []string{"bacon"}) {
+		t.Fatalf("unexpected Ninja arguments: -j%d %v", c.parallel, c.arguments)
+	}
+}
