@@ -11930,3 +11930,34 @@ func TestInstallationRulesForMultipleApexPrebuilts(t *testing.T) {
 		checkHideFromMake(t, ctx, tc.expectedVisibleModuleName, tc.expectedHiddenModuleNames)
 	}
 }
+
+func TestApexErofsToolDependency(t *testing.T) {
+	for _, fsType := range []string{"ext4", "f2fs", "erofs"} {
+		t.Run(fsType, func(t *testing.T) {
+			ctx := testApex(t, fmt.Sprintf(`
+				apex {
+					name: "myapex",
+					key: "myapex.key",
+					updatable: false,
+					payload_fs_type: %q,
+				}
+				apex_key {
+					name: "myapex.key",
+					public_key: "testkey.avbpubkey",
+					private_key: "testkey.pem",
+				}
+			`, fsType))
+			rule := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("apexRule")
+			tools := append(rule.Implicits.Strings(), rule.RuleParams.CommandDeps...)
+			usesErofs := false
+			for _, tool := range tools {
+				if strings.Contains(tool, "make_erofs") {
+					usesErofs = true
+				}
+			}
+			if usesErofs != (fsType == "erofs") {
+				t.Errorf("unexpected make_erofs dependency for %s: %v", fsType, tools)
+			}
+		})
+	}
+}
