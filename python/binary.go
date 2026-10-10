@@ -90,6 +90,11 @@ func PythonBinaryHostFactory() android.Module {
 	return NewBinary(android.HostSupported).init()
 }
 
+// Python executables package one interpreter and are not merged into universal binaries.
+func (p *PythonBinaryModule) SupportsTarget(ctx android.BaseModuleContext, target android.Target) bool {
+	return target.Os != android.Darwin || target.Arch.ArchType == ctx.Config().BuildOSTarget.Arch.ArchType
+}
+
 func (p *PythonBinaryModule) init() android.Module {
 	p.AddProperties(&p.properties, &p.protoProperties)
 	p.AddProperties(&p.binaryProperties)
