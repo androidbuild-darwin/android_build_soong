@@ -550,23 +550,60 @@ func assertString(t *testing.T, got, expected string) {
 }
 
 func TestDarwinToolchainSupport(t *testing.T) {
-	if config.FindToolchain(android.Darwin, android.Arch{ArchType: android.Arm64}).Supported() {
-		t.Error("Darwin arm64 must not be enabled without a bundled host sysroot")
+	for _, arch := range []android.ArchType{android.Arm64, android.X86_64} {
+		if !config.FindToolchain(android.Darwin, android.Arch{ArchType: arch}).Supported() {
+			t.Errorf("Darwin %s toolchain must support sysroot availability checks", arch)
+		}
 	}
-	if !config.FindToolchain(android.Darwin, android.Arch{ArchType: android.X86_64}).Supported() {
-		t.Error("Darwin x86_64 must remain supported")
-	}
+}
+
+type targetSupportContext struct {
+	android.BaseModuleContext
+	config  android.Config
+	matches []string
+	pattern string
+}
+
+func (ctx *targetSupportContext) Config() android.Config { return ctx.config }
+func (ctx *targetSupportContext) GlobWithDeps(pattern string, excludes []string) ([]string, error) {
+	ctx.pattern = pattern
+	return ctx.matches, nil
 }
 
 func TestDarwinSupportedTargets(t *testing.T) {
 	module := &Module{}
 	for _, test := range []struct {
+		name      string
+		os        android.OsType
 		arch      android.ArchType
+		env       map[string]string
+		matches   []string
 		supported bool
-	}{{android.Arm64, false}, {android.X86_64, true}} {
-		target := android.Target{Os: android.Darwin, Arch: android.Arch{ArchType: test.arch}}
-		if got := module.SupportsTarget(target); got != test.supported {
-			t.Errorf("Darwin %s support = %t, want %t", test.arch, got, test.supported)
-		}
+		pattern   string
+	}{
+		{"missing", android.Darwin, android.Arm64, nil, nil, false,
+			"prebuilts/rust/{host}/1.75.0/lib/rustlib/aarch64-apple-darwin/lib/libstd-*.rlib"},
+		{"override", android.Darwin, android.Arm64,
+			map[string]string{"RUST_PREBUILTS_BASE": "custom/rust", "RUST_PREBUILTS_VERSION": "new"},
+			[]string{"libstd-test.rlib"}, true,
+			"custom/rust/{host}/new/lib/rustlib/aarch64-apple-darwin/lib/libstd-*.rlib"},
+		{"x86_64", android.Darwin, android.X86_64, nil, nil, true, ""},
+		{"linux", android.Linux, android.Arm64, nil, nil, true, ""},
+		{"android", android.Android, android.Arm64, nil, nil, true, ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := &targetSupportContext{
+				config:  android.TestConfig(t.TempDir(), test.env, "", nil),
+				matches: test.matches,
+			}
+			target := android.Target{Os: test.os, Arch: android.Arch{ArchType: test.arch}}
+			if got := module.SupportsTarget(ctx, target); got != test.supported {
+				t.Errorf("support = %t, want %t", got, test.supported)
+			}
+			expected := strings.ReplaceAll(test.pattern, "{host}", config.HostPrebuiltTag(ctx.config))
+			if ctx.pattern != expected {
+				t.Errorf("sysroot glob = %q, want %q", ctx.pattern, expected)
+			}
+		})
 	}
 }
