@@ -879,6 +879,13 @@ func (mod *Module) ProcMacro() bool {
 	return false
 }
 
+func (mod *Module) SupportsTarget(target android.Target) bool {
+	if target.Os == android.Darwin {
+		return config.FindToolchain(target.Os, target.Arch).Supported()
+	}
+	return true
+}
+
 func (mod *Module) toolchain(ctx android.BaseModuleContext) config.Toolchain {
 	if mod.cachedToolchain == nil {
 		mod.cachedToolchain = config.FindToolchain(ctx.Os(), ctx.Arch())
