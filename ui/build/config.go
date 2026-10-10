@@ -837,6 +837,8 @@ func (c *configImpl) parseArgs(ctx Context, args []string) {
 			c.verbose = true
 		} else if arg == "--empty-ninja-file" {
 			c.emptyNinjaFile = true
+		} else if arg == "--skip-soong" {
+			c.skipSoong = true
 		} else if arg == "--skip-ninja" {
 			c.skipNinja = true
 		} else if arg == "--skip-make" {
