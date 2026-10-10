@@ -70,7 +70,6 @@ func init() {
 	pctx.HostBinToolVariable("extract_apks", "extract_apks")
 	pctx.HostBinToolVariable("make_f2fs", "make_f2fs")
 	pctx.HostBinToolVariable("sload_f2fs", "sload_f2fs")
-	pctx.HostBinToolVariable("make_erofs", "make_erofs")
 	pctx.HostBinToolVariable("apex_compression_tool", "apex_compression_tool")
 	pctx.HostBinToolVariable("dexdeps", "dexdeps")
 	pctx.HostBinToolVariable("apex_sepolicy_tests", "apex_sepolicy_tests")
@@ -137,7 +136,7 @@ var (
 			`--payload_type image ` +
 			`--key ${key} ${opt_flags} ${image_dir} ${out} `,
 		CommandDeps: []string{"${apexer}", "${avbtool}", "${e2fsdroid}", "${merge_zips}",
-			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}", "${make_erofs}",
+			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}",
 			"${soong_zip}", "${zipalign}", "${aapt2}", "prebuilts/sdk/current/public/android.jar"},
 		Rspfile:        "${out}.copy_commands",
 		RspfileContent: "${copy_commands}",
@@ -164,7 +163,7 @@ var (
 			`${opt_flags} `,
 		CommandDeps: []string{"${apexer_with_DCLA_preprocessing}", "${apexer}", "${avbtool}", "${e2fsdroid}",
 			"${merge_zips}", "${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}",
-			"${sload_f2fs}", "${make_erofs}", "${soong_zip}", "${zipalign}", "${aapt2}",
+			"${sload_f2fs}", "${soong_zip}", "${zipalign}", "${aapt2}",
 			"prebuilts/sdk/current/public/android.jar"},
 		Rspfile:        "${out}.copy_commands",
 		RspfileContent: "${copy_commands}",
@@ -774,6 +773,9 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	}
 
 	optFlags = append(optFlags, "--payload_fs_type "+a.payloadFsType.string())
+	if a.payloadFsType == erofs {
+		implicitInputs = append(implicitInputs, ctx.Config().HostToolPath(ctx, "make_erofs"))
+	}
 
 	if a.dynamic_common_lib_apex() {
 		ctx.Build(pctx, android.BuildParams{
