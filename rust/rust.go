@@ -1164,6 +1164,11 @@ type autoDeppable interface {
 }
 
 func (mod *Module) begin(ctx BaseModuleContext) {
+	if !mod.toolchain(ctx).Supported() {
+		mod.Disable()
+		return
+	}
+
 	if mod.coverage != nil {
 		mod.coverage.begin(ctx)
 	}
@@ -1590,6 +1595,10 @@ func (r *Module) useVendorApi() bool {
 }
 
 func (mod *Module) DepsMutator(actx android.BottomUpMutatorContext) {
+	if !mod.Enabled() {
+		return
+	}
+
 	ctx := &depsContext{
 		BottomUpMutatorContext: actx,
 	}

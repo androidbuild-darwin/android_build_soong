@@ -24,6 +24,7 @@ import (
 
 	"android/soong/android"
 	"android/soong/genrule"
+	"android/soong/rust/config"
 )
 
 func TestMain(m *testing.M) {
@@ -545,5 +546,14 @@ func assertString(t *testing.T, got, expected string) {
 	t.Helper()
 	if got != expected {
 		t.Errorf("expected %q got %q", expected, got)
+	}
+}
+
+func TestDarwinToolchainSupport(t *testing.T) {
+	if config.FindToolchain(android.Darwin, android.Arch{ArchType: android.Arm64}).Supported() {
+		t.Error("Darwin arm64 must not be enabled without a bundled host sysroot")
+	}
+	if !config.FindToolchain(android.Darwin, android.Arch{ArchType: android.X86_64}).Supported() {
+		t.Error("Darwin x86_64 must remain supported")
 	}
 }

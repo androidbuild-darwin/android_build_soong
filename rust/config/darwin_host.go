@@ -63,7 +63,8 @@ type toolchainDarwinX8664 struct {
 }
 
 func (toolchainDarwinArm64) Supported() bool {
-	return true
+	// The bundled Darwin Rust toolchain only provides an x86_64 host sysroot.
+	return false
 }
 
 func (toolchainDarwinX8664) Supported() bool {
