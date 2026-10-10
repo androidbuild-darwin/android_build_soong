@@ -257,3 +257,25 @@ func TestPartialCompile(t *testing.T) {
 		})
 	}
 }
+
+func TestHostCcSharedLibPath(t *testing.T) {
+	for _, tc := range []struct {
+		os  OsType
+		ext string
+	}{
+		{Linux, ".so"},
+		{Darwin, ".dylib"},
+	} {
+		t.Run(tc.os.String(), func(t *testing.T) {
+			config := TestConfig("out", nil, "", nil)
+			config.BuildOS = tc.os
+			config.BuildArch = X86_64
+			ctx := PathContextForTesting(config)
+			got := config.HostCcSharedLibPath(ctx, "libc++").String()
+			want := filepath.Join("lib64", "libc++"+tc.ext)
+			if !strings.HasSuffix(got, want) {
+				t.Errorf("HostCcSharedLibPath = %q, want suffix %q", got, want)
+			}
+		})
+	}
+}
