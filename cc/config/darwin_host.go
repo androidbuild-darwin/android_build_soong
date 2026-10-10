@@ -54,6 +54,7 @@ var (
 		"12",
 		"13",
 		"14",
+		"26",
 	}
 
 	darwinAvailableLibraries = append(
