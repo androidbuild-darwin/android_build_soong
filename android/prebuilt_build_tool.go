@@ -41,6 +41,11 @@ type prebuiltBuildTool struct {
 	toolPath OptionalPath
 }
 
+// Prebuilt tools package one executable; they do not merge universal binaries.
+func (t *prebuiltBuildTool) SupportsTarget(ctx BaseModuleContext, target Target) bool {
+	return target.Os != Darwin || target.Arch.ArchType == ctx.Config().BuildOSTarget.Arch.ArchType
+}
+
 func (t *prebuiltBuildTool) Name() string {
 	return t.prebuilt.Name(t.ModuleBase.Name())
 }
