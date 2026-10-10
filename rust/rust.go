@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"android/soong/bloaty"
@@ -879,11 +880,26 @@ func (mod *Module) ProcMacro() bool {
 	return false
 }
 
-func (mod *Module) SupportsTarget(target android.Target) bool {
-	if target.Os == android.Darwin {
-		return config.FindToolchain(target.Os, target.Arch).Supported()
+func (mod *Module) SupportsTarget(ctx android.BaseModuleContext, target android.Target) bool {
+	if target.Os != android.Darwin {
+		return true
 	}
-	return true
+	toolchain := config.FindToolchain(target.Os, target.Arch)
+	if !toolchain.Supported() || target.Arch.ArchType != android.Arm64 {
+		return toolchain.Supported()
+	}
+	base := ctx.Config().Getenv("RUST_PREBUILTS_BASE")
+	if base == "" {
+		base = config.RustDefaultBase
+	}
+	pattern := filepath.Join(base, config.HostPrebuiltTag(ctx.Config()), config.GetRustVersion(ctx),
+		"lib", "rustlib", toolchain.RustTriple(), "lib", "libstd-*.rlib")
+	libs, err := ctx.GlobWithDeps(pattern, nil)
+	if err != nil {
+		ctx.ModuleErrorf("checking Darwin Rust sysroot: %s", err)
+		return false
+	}
+	return len(libs) > 0
 }
 
 func (mod *Module) toolchain(ctx android.BaseModuleContext) config.Toolchain {

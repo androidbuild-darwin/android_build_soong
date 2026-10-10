@@ -529,7 +529,7 @@ var DarwinUniversalVariantTag = archDepTag{name: "darwin universal binary"}
 // TargetSupport allows module types to exclude targets before arch variants and
 // inter-variant dependencies are created.
 type TargetSupport interface {
-	SupportsTarget(Target) bool
+	SupportsTarget(BaseModuleContext, Target) bool
 }
 
 // archMutator splits a module into a variant for each Target requested by the module.  Target selection
@@ -601,7 +601,7 @@ func archMutator(bpctx blueprint.BottomUpMutatorContext) {
 	if support, ok := module.(TargetSupport); ok {
 		var supportedTargets []Target
 		for _, target := range osTargets {
-			if support.SupportsTarget(target) {
+			if support.SupportsTarget(mctx, target) {
 				supportedTargets = append(supportedTargets, target)
 			}
 		}
