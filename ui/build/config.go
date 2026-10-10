@@ -292,6 +292,14 @@ func NewConfig(ctx Context, args ...string) Config {
 		}
 	}
 
+	// The header ABI checker prebuilts are not available for Darwin.
+	if runtime.GOOS == "darwin" {
+		if _, set := ret.environ.Get("SKIP_ABI_CHECKS"); !set {
+			ret.environ.Set("SKIP_ABI_CHECKS", "true")
+			ctx.Println("Skipping header ABI checks: checker tools are unavailable on Darwin.")
+		}
+	}
+
 	if distDir, ok := ret.environ.Get("DIST_DIR"); ok {
 		ret.distDir = filepath.Clean(distDir)
 	} else {
