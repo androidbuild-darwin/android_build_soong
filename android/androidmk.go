@@ -972,10 +972,8 @@ func shouldSkipAndroidMkProcessing(module *ModuleBase) bool {
 		return true
 	}
 
-	// On Mac, only expose host darwin modules to Make, as that's all we claim to support.
-	// In reality, some of them depend on device-built (Java) modules, so we can't disable all
-	// device modules in Soong, but we can hide them from Make (and thus the build user interface)
-	if runtime.GOOS == "darwin" && module.Os() != Darwin {
+	// Expose Darwin host and Android target modules to Make on Mac.
+	if runtime.GOOS == "darwin" && module.Os() != Darwin && module.Os() != Android {
 		return true
 	}
 
