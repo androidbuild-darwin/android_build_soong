@@ -980,8 +980,9 @@ func shouldSkipAndroidMkProcessing(ctx ConfigurableEvaluatorContext, module *Mod
 		return true
 	}
 
-	// Expose Darwin host and Android target modules to Make on Mac.
-	if runtime.GOOS == "darwin" && module.Os() != Darwin && module.Os() != Android {
+	// Expose Darwin host, Android target and OS-independent modules to Make on Mac.
+	if runtime.GOOS == "darwin" && module.Os() != Darwin &&
+		module.Os() != Android && module.Os().Class != Generic {
 		return true
 	}
 
