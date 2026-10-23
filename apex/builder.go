@@ -75,6 +75,7 @@ func init() {
 	pctx.HostBinToolVariable("apex_sepolicy_tests", "apex_sepolicy_tests")
 	pctx.HostBinToolVariable("deapexer", "deapexer")
 	pctx.HostBinToolVariable("debugfs_static", "debugfs_static")
+	pctx.HostBinToolVariable("fsck_erofs", "fsck.erofs")
 	pctx.SourcePathVariable("genNdkUsedbyApexPath", "build/soong/scripts/gen_ndk_usedby_apex.sh")
 	pctx.HostBinToolVariable("conv_linker_config", "conv_linker_config")
 	pctx.HostBinToolVariable("assemble_vintf", "assemble_vintf")
@@ -223,7 +224,7 @@ var (
 	apexHostVerifierRule = pctx.StaticRule("apexHostVerifierRule", blueprint.RuleParams{
 		Command: `${host_apex_verifier} --deapexer=${deapexer} --debugfs=${debugfs_static} ` +
 			`--fsckerofs=${fsck_erofs} --apex=${in} --partition_tag=${partition_tag} && touch ${out}`,
-		CommandDeps: []string{"${host_apex_verifier}", "${deapexer}", "${debugfs_static}", "${fsck_erofs}"},
+		CommandDeps: []string{"${host_apex_verifier}", "${deapexer}", "${debugfs_static}"},
 		Description: "run host_apex_verifier",
 	}, "partition_tag")
 
@@ -1239,10 +1240,15 @@ func runApexElfCheckerUnwanted(ctx android.ModuleContext, apexFile android.Path,
 
 func runApexHostVerifier(ctx android.ModuleContext, a *apexBundle, apexFile android.Path) android.Path {
 	timestamp := android.PathForModuleOut(ctx, "host_apex_verifier.timestamp")
+	var implicitInputs android.Paths
+	if a.payloadFsType == erofs {
+		implicitInputs = append(implicitInputs, ctx.Config().HostToolPath(ctx, "fsck.erofs"))
+	}
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   apexHostVerifierRule,
-		Input:  apexFile,
-		Output: timestamp,
+		Rule:      apexHostVerifierRule,
+		Implicits: implicitInputs,
+		Input:     apexFile,
+		Output:    timestamp,
 		Args: map[string]string{
 			"partition_tag": a.PartitionTag(ctx.DeviceConfig()),
 		},

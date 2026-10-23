@@ -12356,6 +12356,19 @@ func TestApexErofsToolDependency(t *testing.T) {
 			if usesFsck != (fsType == "erofs") {
 				t.Errorf("unexpected fsck.erofs dependency for %s: %v", fsType, checkerTools)
 			}
+			if fsType != "f2fs" {
+				verifier := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("apexHostVerifierRule")
+				verifierTools := append(verifier.Implicits.Strings(), verifier.RuleParams.CommandDeps...)
+				usesFsck = false
+				for _, tool := range verifierTools {
+					if strings.Contains(tool, "fsck.erofs") || strings.Contains(tool, "fsck_erofs") {
+						usesFsck = true
+					}
+				}
+				if usesFsck != (fsType == "erofs") {
+					t.Errorf("unexpected host verifier fsck.erofs dependency for %s: %v", fsType, verifierTools)
+				}
+			}
 
 		})
 	}
