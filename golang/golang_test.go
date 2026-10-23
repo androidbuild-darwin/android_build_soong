@@ -37,6 +37,16 @@ func TestGolang(t *testing.T) {
 
 	result := android.GroupFixturePreparers(
 		android.PrepareForTestWithArchMutator,
+		android.FixtureModifyConfig(func(config android.Config) {
+			cross := config.BuildOSTarget
+			cross.HostCross = true
+			if cross.Arch.ArchType == android.X86_64 {
+				cross.Arch.ArchType = android.Arm64
+			} else {
+				cross.Arch.ArchType = android.X86_64
+			}
+			config.Targets[cross.Os] = append(config.Targets[cross.Os], cross)
+		}),
 		android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 			RegisterGoModuleTypes(ctx)
 			ctx.PreDepsMutators(func(ctx android.RegisterMutatorsContext) {
@@ -44,6 +54,11 @@ func TestGolang(t *testing.T) {
 			})
 		}),
 	).RunTestWithBp(t, bp)
+
+	for _, name := range []string{"gopkg", "gobin"} {
+		android.AssertDeepEquals(t, name+" should only have a native host variant",
+			[]string{result.Config.BuildOSTarget.String()}, result.ModuleVariantsForTests(name))
+	}
 
 	bin := result.ModuleForTests("gobin", result.Config.BuildOSTarget.String())
 

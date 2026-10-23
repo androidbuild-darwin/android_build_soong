@@ -47,7 +47,8 @@ type GoPackage struct {
 func goPackageModuleFactory() android.Module {
 	module := &GoPackage{}
 	module.AddProperties(module.Properties()...)
-	android.InitAndroidArchModule(module, android.HostSupported, android.MultilibFirst)
+	// Blueprint uses the build host Go toolchain and does not cross-compile.
+	android.InitAndroidArchModule(module, android.HostSupportedNoCross, android.MultilibFirst)
 	return module
 }
 
@@ -74,7 +75,8 @@ type GoBinary struct {
 func goBinaryModuleFactory() android.Module {
 	module := &GoBinary{}
 	module.AddProperties(module.Properties()...)
-	android.InitAndroidArchModule(module, android.HostSupported, android.MultilibFirst)
+	// Blueprint uses the build host Go toolchain and does not cross-compile.
+	android.InitAndroidArchModule(module, android.HostSupportedNoCross, android.MultilibFirst)
 	return module
 }
 
