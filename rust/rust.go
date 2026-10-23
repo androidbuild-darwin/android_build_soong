@@ -1618,7 +1618,7 @@ func (r *Module) useVendorApi() bool {
 }
 
 func (mod *Module) DepsMutator(actx android.BottomUpMutatorContext) {
-	if !mod.Enabled() {
+	if !mod.Enabled(actx) {
 		return
 	}
 
