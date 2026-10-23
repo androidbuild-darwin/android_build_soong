@@ -12313,6 +12313,10 @@ func TestApexVerifyNativeImplementationLibs(t *testing.T) {
 				}),
 			).ExtendWithErrorHandler(android.FixtureCustomErrorHandler(checkErrors(testCase.dependencyPath))).
 				RunTestWithBp(t, bp.String())
+		})
+	}
+}
+
 func TestApexErofsToolDependency(t *testing.T) {
 	for _, fsType := range []string{"ext4", "f2fs", "erofs"} {
 		t.Run(fsType, func(t *testing.T) {
