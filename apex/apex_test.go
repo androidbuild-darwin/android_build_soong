@@ -7106,8 +7106,9 @@ func TestApexValidation_TestApexCanSkipInitRcCheck(t *testing.T) {
 }
 
 func TestApexValidation_TestApexCheckInitRc(t *testing.T) {
-	t.Parallel()
-	ctx := testApex(t, `
+	for _, host := range []android.OsType{android.Linux, android.Darwin} {
+		t.Run(host.String(), func(t *testing.T) {
+			ctx := testApex(t, `
 		apex_test {
 			name: "myapex",
 			key: "myapex.key",
@@ -7118,11 +7119,16 @@ func TestApexValidation_TestApexCheckInitRc(t *testing.T) {
 			public_key: "testkey.avbpubkey",
 			private_key: "testkey.pem",
 		}
-	`)
+	`, android.FixtureModifyConfig(func(config android.Config) {
+				config.BuildOS = host
+			}))
 
-	validations := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("signapk").Validations.Strings()
-	if !android.SuffixInList(validations, "host_apex_verifier.timestamp") {
-		t.Error("should run host_apex_verifier")
+			validations := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("signapk").Validations.Strings()
+			got := android.SuffixInList(validations, "host_apex_verifier.timestamp")
+			if want := host != android.Darwin; got != want {
+				t.Errorf("host_apex_verifier validation = %v, want %v", got, want)
+			}
+		})
 	}
 }
 
@@ -12333,7 +12339,9 @@ func TestApexErofsToolDependency(t *testing.T) {
 					public_key: "testkey.avbpubkey",
 					private_key: "testkey.pem",
 				}
-			`, fsType))
+			`, fsType), android.FixtureModifyConfig(func(config android.Config) {
+				config.BuildOS = android.Linux
+			}))
 			rule := ctx.ModuleForTests("myapex", "android_common_myapex").Rule("apexRule")
 			tools := append(rule.Implicits.Strings(), rule.RuleParams.CommandDeps...)
 			usesErofs := false

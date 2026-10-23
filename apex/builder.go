@@ -921,7 +921,8 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		validations = append(validations,
 			runApexElfCheckerUnwanted(ctx, unsignedOutputFile, a.properties.Unwanted_transitive_deps, a.payloadFsType))
 	}
-	if !a.skipValidation(hostApexVerifier) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
+	// host_apex_verifier depends on init_host_defaults, which disables Darwin.
+	if ctx.Config().BuildOS != android.Darwin && !a.skipValidation(hostApexVerifier) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
 		validations = append(validations, runApexHostVerifier(ctx, a, unsignedOutputFile))
 	}
 	ctx.Build(pctx, android.BuildParams{
