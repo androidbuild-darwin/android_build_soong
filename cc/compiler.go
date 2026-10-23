@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -711,7 +712,8 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags, deps
 
 	if ctx.optimizeForSize() {
 		flags.Local.CFlags = append(flags.Local.CFlags, "-Oz")
-		if !ctx.Config().IsEnvFalse("THINLTO_USE_MLGO") {
+		// The Darwin toolchain does not include the MLGO inliner model.
+		if runtime.GOOS != "darwin" && !ctx.Config().IsEnvFalse("THINLTO_USE_MLGO") {
 			flags.Local.LdFlags = append(flags.Local.LdFlags, "-Wl,-mllvm,-enable-ml-inliner=release")
 		}
 	}

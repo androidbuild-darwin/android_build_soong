@@ -15,6 +15,8 @@
 package cc
 
 import (
+	"runtime"
+	"strings"
 	"testing"
 
 	"android/soong/android"
@@ -42,5 +44,29 @@ func TestIsThirdParty(t *testing.T) {
 		if android.IsThirdPartyPath(path) {
 			t.Errorf("Expected %s to *not* be considered third party", path)
 		}
+	}
+}
+
+func TestSizeOptimizationMlgo(t *testing.T) {
+	for _, setting := range []string{"", "false", "true"} {
+		t.Run("THINLTO_USE_MLGO="+setting, func(t *testing.T) {
+			result := android.GroupFixturePreparers(
+				prepareForCcTest,
+				android.FixtureMergeEnv(map[string]string{"THINLTO_USE_MLGO": setting}),
+			).RunTestWithBp(t, `
+				cc_library_shared {
+					name: "libfoo",
+					srcs: ["foo.c"],
+					optimize_for_size: true,
+				}
+			`)
+			module := result.ModuleForTests("libfoo", "android_arm64_armv8-a_shared")
+			flags := module.Rule("ld").Args["ldFlags"]
+			got := strings.Contains(flags, "-enable-ml-inliner=release")
+			if want := runtime.GOOS != "darwin" && setting != "false"; got != want {
+				t.Errorf("MLGO inliner enabled = %v, want %v", got, want)
+			}
+			android.AssertStringDoesContain(t, "ThinLTO remains enabled", flags, "-flto=thin")
+		})
 	}
 }
