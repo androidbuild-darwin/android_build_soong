@@ -607,7 +607,7 @@ func (a *archTransitionMutator) Split(ctx BaseModuleContext) []string {
 	if support, ok := module.(TargetSupport); ok {
 		var supportedTargets []Target
 		for _, target := range osTargets {
-			if support.SupportsTarget(mctx, target) {
+			if support.SupportsTarget(ctx, target) {
 				supportedTargets = append(supportedTargets, target)
 			}
 		}
