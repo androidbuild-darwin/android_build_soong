@@ -36,3 +36,9 @@ func PythonLibraryHostFactory() android.Module {
 func PythonLibraryFactory() android.Module {
 	return newModule(android.HostAndDeviceSupported, android.MultilibBoth).init()
 }
+
+// Darwin host Python modules use native interpreters and build-tool data.
+// Apply the same target selection to libraries and their embedding binaries.
+func (p *PythonLibraryModule) SupportsTarget(ctx android.BaseModuleContext, target android.Target) bool {
+	return target.Os != android.Darwin || target.Arch.ArchType == ctx.Config().BuildOSTarget.Arch.ArchType
+}
